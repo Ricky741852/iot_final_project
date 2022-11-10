@@ -7,6 +7,9 @@
 #define LED 8
 #define N_NODES 4
 
+int rounds = 0;
+int rx_done = 0;
+
 //test
 //#include <RHReliableDatagram.h>
 
@@ -86,6 +89,13 @@ void setup() {
   Serial.println(freeMem());
 }
 
+void printFreeMem() {
+  Serial.print(F("mem = "));
+  Serial.println(freeMem());
+
+  return;
+}
+
 const __FlashStringHelper* getErrorString(uint8_t error) {
   switch(error) {
     case 1: return F("invalid length");
@@ -147,9 +157,15 @@ void printNodeInfo(uint8_t node, char *s) {
 }
 
 void loop() {
+  rounds++;
+  Serial.println("======= " + String(rounds) + " =======");
 
+  rx_done = 0;
+  
   for(uint8_t n=1;n<=N_NODES;n++) {
-    if (n == nodeId) continue; // self
+    if (n == nodeId) {
+      continue; // self
+    }
 
     updateRoutingTable();
     getRouteInfoString(buf, RH_MESH_MAX_MESSAGE_LEN);
@@ -169,13 +185,14 @@ void loop() {
       Serial.println(getErrorString(error));
     } else {
       Serial.println(F(" OK"));
+      rx_done++;
       // we received an acknowledgement from the next hop for the node we tried to send to.
       RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
       if (route->next_hop != 0) {
         rssi[route->next_hop-1] = rf95.lastRssi();
       }
     }
-    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
+//    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
     
     // listen for incoming messages. Wait a random amount of time before we transmit
     // again to the next node
@@ -190,7 +207,7 @@ void loop() {
         Serial.print(F("->"));
         Serial.print(F(" :"));
         Serial.println(buf);
-        if (nodeId == 1) printNodeInfo(from, buf); // debugging
+//        if (nodeId == 1) printNodeInfo(from, buf); // debugging
         // we received data from node 'from', but it may have actually come from an intermediate node
         RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
         if (route->next_hop != 0) {
@@ -199,5 +216,6 @@ void loop() {
       }
     }
   }
-
+  Serial.println("rx_done: " + String(rx_done) + "/3");
+  printFreeMem();
 }
