@@ -32,9 +32,30 @@ int freeMem() {
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+void LEDblink(int code) {
+  if (code == 0) {
+    digitalWrite(LED, HIGH);
+    delay(1000);
+    digitalWrite(LED, LOW);
+  }
+  else {
+    for (int i = 0; i < code; i++) {
+      digitalWrite(LED, HIGH);
+      delay(100);
+      digitalWrite(LED, LOW);
+      delay(100);
+    }
+  }
+
+//  Serial.println("done");
+
+  return;
+}
+
 void setup() {
   randomSeed(analogRead(0));
   pinMode(LED, OUTPUT);
+  LEDblink(0);
   Serial.begin(115200);
   while (!Serial) ; // Wait for serial port to be available
 
@@ -183,9 +204,12 @@ void loop() {
       Serial.println();
       Serial.print(F(" ! "));
       Serial.println(getErrorString(error));
+      LEDblink(error);
     } else {
       Serial.println(F(" OK"));
       rx_done++;
+      LEDblink(0);
+      
       // we received an acknowledgement from the next hop for the node we tried to send to.
       RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
       if (route->next_hop != 0) {
