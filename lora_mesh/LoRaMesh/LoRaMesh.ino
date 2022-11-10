@@ -4,8 +4,11 @@
 #include <RHMesh.h>
 #include <RH_RF95.h>
 #define RH_HAVE_SERIAL
-#define LED 9
+#define LED 8
 #define N_NODES 4
+
+//test
+//#include <RHReliableDatagram.h>
 
 uint8_t nodeId;
 uint8_t routes[N_NODES]; // full routing table for mesh
@@ -39,6 +42,7 @@ void setup() {
     nodeId = 1;
   }
   Serial.print(F("initializing node "));
+  Serial.println(String(nodeId));
 
   manager = new RHMesh(rf95, nodeId);
 
@@ -48,7 +52,7 @@ void setup() {
     Serial.println("done");
   }
   rf95.setTxPower(23, false);
-  rf95.setFrequency(915.0);
+  rf95.setFrequency(433.0);
   rf95.setCADTimeout(500);
 
   // Possible configurations:
@@ -154,9 +158,11 @@ void loop() {
     Serial.print(n);
     Serial.print(F(" :"));
     Serial.print(buf);
-
+    
     // send an acknowledged message to the target node
+    manager -> setTimeout(5000);
     uint8_t error = manager->sendtoWait((uint8_t *)buf, strlen(buf), n);
+    // Serial.println("HERE");
     if (error != RH_ROUTER_ERROR_NONE) {
       Serial.println();
       Serial.print(F(" ! "));
@@ -170,7 +176,7 @@ void loop() {
       }
     }
     if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
-
+    
     // listen for incoming messages. Wait a random amount of time before we transmit
     // again to the next node
     unsigned long nextTransmit = millis() + random(3000, 5000);
