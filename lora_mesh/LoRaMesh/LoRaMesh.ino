@@ -5,24 +5,23 @@
 #include <RH_RF95.h>
 #define RH_HAVE_SERIAL
 #define LED 8
-#define N_NODES 4
+#define N_NODES 30
 //#define N_NODES 2 //test
 
 int rounds = 0;
 int rx_done = 0;
-int offline[N_NODES] = {0};
 
 int data_set_status = 0;
 int nodeid = -1; //unique number
 int groupid = -1;  //group name set by group organizer
 int memberNum = -1;  //count of group members
 
-//test
-//#include <RHReliableDatagram.h>
+int nodeId;
+int groupId;
 
-uint8_t nodeId;
 uint8_t routes[N_NODES]; // full routing table for mesh
 int16_t rssi[N_NODES]; // signal strength info
+int offline[N_NODES];
 
 // Singleton instance of the radio driver
 RH_RF95 rf95;
@@ -59,6 +58,58 @@ void LEDblink(int code) {
   return;
 }
 
+void setBasicData(int *p_nodeId, int *p_groupId, int *p_memberNum) {
+  int nodeid = *p_nodeId; //unique number
+  int groupid = *p_groupId;  //group name set by group organizer
+  int memberNum = *p_memberNum;  //count of group members
+  while (!data_set_status) {
+    // Serial.println(F("toPython-->Started"));
+    String str = "";
+    while (!Serial.available());
+    str = Serial.readString();
+    if (str) {
+      // Serial.println(F("get str"));
+    }
+    if (str.indexOf("nodeId-->") >= 0) {
+      Serial.print(F("toPython-->nodeId-->"));
+      str.replace("nodeId-->", "");
+      nodeid = str.toInt();
+      EEPROM.write(0, nodeid);
+      Serial.println(String(nodeid));
+    }
+    if (str.indexOf("groupId-->") >= 0) {
+      Serial.print(F("toPython-->groupId-->"));
+      str.replace("groupId-->", "");
+      groupid = str.toInt();
+      EEPROM.write(1, groupid);
+      Serial.println(String(groupid));
+    }
+    if (str.indexOf("memberNum-->") >= 0) {
+      Serial.print(F("toPython-->memberNum-->"));
+      str.replace("memberNum-->", "");
+      memberNum = str.toInt();
+      EEPROM.write(2, memberNum);
+      Serial.println(String(memberNum));
+    }
+    if (nodeid != -1 && groupid != -1 && memberNum != -1) {
+      data_set_status = 1;
+      // Serial.println(F("toPython-->all data done. "));
+      // break;
+    }
+    else {
+      // Serial.println(F("toPython-->redo "));
+      delay(1000);
+    }
+  }
+}
+
+void printFreeMem() {
+  Serial.print(F("mem = "));
+  Serial.println(freeMem());
+
+  return;
+}
+
 void setup() {
   randomSeed(analogRead(0));
   pinMode(LED, OUTPUT);
@@ -67,51 +118,22 @@ void setup() {
   Serial.setTimeout(1);
   while (!Serial) ; // Wait for serial port to be available
 
+  
+  setBasicData(&nodeid, &groupid, &memberNum);
   nodeId = EEPROM.read(0);
-  while (!data_set_status) {
-//    Serial.println(F("toPython-->Started"));
-    String str = "";
-    while (!Serial.available());
-    str = Serial.readString();
-    if (str) {
-//      Serial.println(F("get str"));
-    }
-    if (str.indexOf("nodeId-->") >= 0) {
-      Serial.print(F("toPython-->nodeId-->"));
-      str.replace("nodeId-->", "");
-      nodeid = str.toInt();
-      Serial.println(String(nodeid));
-    }
-    if (str.indexOf("groupId-->") >= 0) {
-      Serial.print(F("toPython-->groupId-->"));
-      str.replace("groupId-->", "");
-      groupid = str.toInt();
-      Serial.println(String(groupid));
-    }
-    if (str.indexOf("memberNum-->") >= 0) {
-      Serial.print(F("toPython-->memberNum-->"));
-      str.replace("memberNum-->", "");
-      memberNum = str.toInt();
-      Serial.println(String(memberNum));
-    }
-    if (nodeid != -1 && groupid != -1 && memberNum != -1) {
-      data_set_status = 1;
-//      Serial.println(F("toPython-->all data done. "));
-//      break;
-    }
-    else {
-//      Serial.println(F("toPython-->redo "));
-      delay(1000);
-    }
-  }
+  groupId = EEPROM.read(1);
+  memberNum = EEPROM.read(2);
+//  Serial.println(nodeId);
+//  Serial.println(groupId);
+//  Serial.println(N_NODES);
 
-//  Serial.println("");
-//  for (int i = 0; i < EEPROM.length(); i++) {
-//    Serial.print(i);
-//    Serial.print(": ");
-//    Serial.println(EEPROM.read(i));
-//  }
-//  Serial.println("");
+  // Serial.println("");
+  // for (int i = 0; i < EEPROM.length(); i++) {
+    // Serial.print(i);
+    // Serial.print(": ");
+    // Serial.println(EEPROM.read(i));
+  // }
+  // Serial.println("");
   
   if (nodeId > 10) {
     Serial.print(F("EEPROM nodeId invalid: "));
@@ -157,17 +179,10 @@ void setup() {
   for (uint8_t n = 1; n <= N_NODES; n++) {
     routes[n - 1] = 0;
     rssi[n - 1] = 0;
+    offline[n - 1] = 0;
   }
 
-  Serial.print(F("mem = "));
-  Serial.println(freeMem());
-}
-
-void printFreeMem() {
-  Serial.print(F("mem = "));
-  Serial.println(freeMem());
-
-  return;
+  printFreeMem();
 }
 
 const __FlashStringHelper* getErrorString(uint8_t error) {
@@ -244,8 +259,8 @@ void loop() {
 
   rx_done = 0;
 
-  for (int i = 0; i < N_NODES; i++) {
-    if (offline[i] > 5) {
+  for (int i = 0; i < memberNum; i++) {
+    if (offline[i] > (memberNum+1)) {
       Serial.print(F("node "));
       Serial.print(i + 1);
       Serial.println(F(" is offline! "));
