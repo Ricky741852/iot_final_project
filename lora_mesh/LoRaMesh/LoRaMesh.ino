@@ -201,7 +201,7 @@ const __FlashStringHelper* getErrorString(uint8_t error) {
   return F("unknown");
 }
 
-double rssitoDistance(double rssi, int a = 47, double n = 1.85) {
+double rssitoDistance(double rssi, int a = 67, double n = 1.192913874) {
   double ra = abs(rssi);
   double ka = (ra - a) / (10 * n);
   double distance = pow(10, ka);
