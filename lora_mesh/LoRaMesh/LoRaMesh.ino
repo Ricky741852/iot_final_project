@@ -218,6 +218,7 @@ void updateRoutingTable() {
     RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
     if (n == nodeId) {
       routes[n - 1] = 255; // self
+      groups[n - 1] = groupId;
     } else {
       routes[n - 1] = route->next_hop;
       if (routes[n - 1] == 0) {
@@ -226,6 +227,11 @@ void updateRoutingTable() {
       }
     }
   }
+}
+
+uint8_t getRecvGroupId() {
+  Serial.println(buf[strlen(buf) - 2]);
+  return (uint8_t)atoi(buf[strlen(buf) - 2]);
 }
 
 // Create a JSON string with the routing info to each node
@@ -244,6 +250,10 @@ void getRouteInfoString(char *p, size_t len) {
     strcat(p, "}");
     if (n < memberNum) {
       strcat(p, ",");
+    }
+    else {
+      strcat(p, ",groupId=");
+      sprintf(p + strlen(p), "%d", groupId);
     }
   }
   strcat(p, "]");
@@ -270,7 +280,7 @@ void loop() {
   rx_done = 0;
 
   for (int i = 0; i < memberNum; i++) {
-    if (offline[i] > (memberNum+1)) {
+    if (offline[i] > 5) {
       Serial.print(F("node "));
       Serial.print(i + 1);
       Serial.println(F(" is offline! "));
@@ -280,7 +290,7 @@ void loop() {
   }
 
   for (uint8_t i = 0; i < memberNum; i++) {
-    int n = (nodeId + i) % 4 + 1;
+    int8_t n = (nodeId + i) % 4 + 1;
     // int n = i + 1;
     if (n == nodeId) {
       continue; // self
@@ -317,7 +327,9 @@ void loop() {
       // we received an acknowledgement from the next hop for the node we tried to send to.
       RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
       if (route->next_hop != 0) {
-        rssi[route->next_hop - 1] = rf95.lastRssi();
+        if (groups[route->next_hop - 1] == groupId) {
+          rssi[route->next_hop - 1] = rf95.lastRssi();
+        }
         Serial.print(F("<< "));
         Serial.print(rf95.lastRssi());
         Serial.print(F(", "));
@@ -345,7 +357,10 @@ void loop() {
         // we received data from node 'from', but it may have actually come from an intermediate node
         RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
         if (route->next_hop != 0) {
-          rssi[route->next_hop - 1] = rf95.lastRssi();
+          groups[route->next_hop - 1] = getRecvGroupId();
+          if (groups[route->next_hop - 1] == groupId) {
+            rssi[route->next_hop - 1] = rf95.lastRssi();
+          }
           Serial.print(F("\t<< "));
           Serial.print(rf95.lastRssi());
           Serial.print(F(", "));
