@@ -19,7 +19,7 @@ uint8_t memberNum = -1;  //count of group members
 
 uint8_t routes[N_NODES]; // full routing table for mesh
 int16_t rssi[N_NODES]; // signal strength info
-uint8_t groups[N_NODES]; // group info
+int groups[N_NODES]; // group info
 uint8_t offline[N_NODES]; // offline info
 
 // Singleton instance of the radio driver
@@ -220,7 +220,7 @@ void updateRoutingTable() {
     RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
     if (n == nodeId) {
       routes[n - 1] = 255; // self
-      groups[n - 1] = groupId;
+      groups[n - 1] = (int)groupId;
     } else {
       routes[n - 1] = route->next_hop;
       if (routes[n - 1] == 0) {
@@ -231,8 +231,8 @@ void updateRoutingTable() {
   }
 }
 
-uint8_t getRecvGroupId() {
-  uint8_t fgroupId = (uint8_t)(buf[strlen(buf) - 2] - '0');
+int getRecvGroupId() {
+  int fgroupId = (buf[strlen(buf) - 2] - '0');
 //  Serial.println(fgroupId);
   if (String(buf).endsWith(String(groupId))) {
     if (groupId == fgroupId) {
