@@ -18,15 +18,16 @@ Adafruit_SSD1306 display(-1);
 Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN, NEO_RGB + NEO_KHZ800);
 #endif
 
-const char* ssid = "your-ssid";
-const char* password = "your-wifi-password";
-const char* mqtt_server = "your-mqtt-server";
-int mqtt_port = 8883;
+const char* ssid = "No Parallels";
+const char* password = "0908148677";
+const char* mqtt_server = "test.mosquitto.org";
+int mqtt_port = 1883;
 const char* mqtt_username = "your-mqtt-username";
 const char* mqtt_password = "your-mqtt-password";
 const char* dataTopic = "mesh_gateway/data";
 
-WiFiClientSecure espClient;
+// WiFiClientSecure espClient;
+WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
 char data[128];
 
