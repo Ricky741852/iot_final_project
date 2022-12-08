@@ -232,7 +232,7 @@ void updateRoutingTable() {
 }
 
 uint8_t getRecvGroupId() {
-  uint8_t fgroupId = buf[strlen(buf) - 2] - '0';
+  uint8_t fgroupId = (uint8_t)(buf[strlen(buf) - 2] - '0');
 //  Serial.println(fgroupId);
   if (String(buf).endsWith(String(groupId))) {
     if (groupId == fgroupId) {
@@ -371,9 +371,9 @@ void loop() {
         // we received data from node 'from', but it may have actually come from an intermediate node
         RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
         if (route->next_hop != 0) {
-          Serial.println(getRecvGroupId());
+//          Serial.println(getRecvGroupId());
           groups[route->next_hop - 1] = getRecvGroupId();
-          Serial.println(groups[route->next_hop - 1]);
+//          Serial.println(groups[route->next_hop - 1]);
           if (groups[route->next_hop - 1] == groupId) {
             rssi[route->next_hop - 1] = rf95.lastRssi();
           }
