@@ -2,13 +2,14 @@
 #include <RHRouter.h>
 #include <RHMesh.h>
 #include <RH_RF95.h>
+
 #define RH_HAVE_SERIAL
 #define LED 8
 #define BTN 7
 #define N_NODES 4
 
-int rounds = 0;
-int rx_done = 0;
+uint8_t rounds = 0;
+uint8_t rx_done = 0;
 
 bool data_set_status = 0;
 bool start_data_setting = 0;
@@ -148,14 +149,16 @@ void setup() {
     nodeId = 1;
   }
   Serial.print(F("initializing node "));
-  Serial.println(String(nodeId));
+  Serial.print(nodeId);
+  Serial.print(F(" at group "));
+  Serial.println(groupId);
 
   manager = new RHMesh(rf95, nodeId);
 
   if (!manager->init()) {
     Serial.println(F("init failed"));
   } else {
-    Serial.println(F("done"));
+    Serial.println(F("init done"));
   }
   rf95.setTxPower(23, false);
   rf95.setFrequency(433.0);
@@ -189,7 +192,6 @@ void setup() {
     groups[n - 1] = 0;
     offline[n - 1] = 0;
   }
-
   printFreeMem();
 }
 
@@ -223,15 +225,22 @@ void updateRoutingTable() {
       routes[n - 1] = route->next_hop;
       if (routes[n - 1] == 0) {
         // if we have no route to the node, reset the received signal strength
-        rssi[n - 1] = 0;
+        //rssi[n - 1] = 0;
       }
     }
   }
 }
 
 uint8_t getRecvGroupId() {
-  Serial.println(buf[strlen(buf) - 2]);
-  return (uint8_t)atoi(buf[strlen(buf) - 2]);
+  uint8_t fgroupId = buf[strlen(buf) - 2] - '0';
+//  Serial.println(fgroupId);
+  if (String(buf).endsWith(String(groupId))) {
+    if (groupId == fgroupId) {
+      Serial.println(F("same"));
+    }
+    Serial.println(F("true"));
+    return fgroupId;
+  }
 }
 
 // Create a JSON string with the routing info to each node
@@ -252,7 +261,7 @@ void getRouteInfoString(char *p, size_t len) {
       strcat(p, ",");
     }
     else {
-      strcat(p, ",groupId=");
+      strcat(p, ",gId=");
       sprintf(p + strlen(p), "%d", groupId);
     }
   }
@@ -274,16 +283,20 @@ void loop() {
   rounds++;
   
   Serial.print(F("======= "));
-  Serial.print(String(rounds));
+  Serial.print(rounds);
   Serial.println(F(" ======="));
 
   rx_done = 0;
 
   for (int i = 0; i < memberNum; i++) {
+//    Serial.print(i);
+//    Serial.print(F(": "));
+//    Serial.println(offline[i]);
     if (offline[i] > 5) {
       Serial.print(F("node "));
       Serial.print(i + 1);
-      Serial.println(F(" is offline! "));
+      Serial.print(F(" offline: "));
+      Serial.println(rssi[i]);
 
       LEDblink(i + 1);
     }
@@ -313,7 +326,7 @@ void loop() {
       Serial.print(F(" ! "));
       Serial.println(getErrorString(error));
 
-      offline[n - i]++;
+      offline[n - 1]++;
 
       // LEDblink(error);
     } else {
@@ -337,7 +350,7 @@ void loop() {
         Serial.println(F("m >>"));
       }
     }
-    //    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
+    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
 
     // listen for incoming messages. Wait a random amount of time before we transmit
     // again to the next node
@@ -353,11 +366,14 @@ void loop() {
         Serial.print(F("->"));
         Serial.print(F(" :"));
         Serial.println(buf);
-        //        if (nodeId == 1) printNodeInfo(from, buf); // debugging
+        if (nodeId == 1) printNodeInfo(from, buf); // debugging
+        
         // we received data from node 'from', but it may have actually come from an intermediate node
         RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
         if (route->next_hop != 0) {
+          Serial.println(getRecvGroupId());
           groups[route->next_hop - 1] = getRecvGroupId();
+          Serial.println(groups[route->next_hop - 1]);
           if (groups[route->next_hop - 1] == groupId) {
             rssi[route->next_hop - 1] = rf95.lastRssi();
           }
@@ -371,7 +387,7 @@ void loop() {
     }
   }
   Serial.print(F("rx_done: "));
-  Serial.print(String(rx_done));
+  Serial.print(rx_done);
   Serial.println(F("/3"));
-  printFreeMem();
+//  printFreeMem();
 }
