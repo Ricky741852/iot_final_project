@@ -25,11 +25,11 @@ key_memberNum = "memberNum-->"
 key_toPython = "toPython-->"
 # write data to arduino
 def write_data():
-    arduino.write(bytes((key_nodeId + nodeId), 'utf-8'))
+    arduino.write((key_nodeId + nodeId).encode())
     read_back()
-    arduino.write(bytes((key_groupId + groupId), 'utf-8'))
+    arduino.write((key_groupId + groupId).encode())
     read_back()
-    arduino.write(bytes((key_memberNum + memberNum), 'utf-8'))
+    arduino.write((key_memberNum + memberNum).encode())
     read_back()
 
 def read_back():
@@ -71,14 +71,15 @@ def read_serial():
 # init board
 arduino = serial.Serial(current_device, 115200, timeout=0.1)
 
-arduino.write(bytes(("BasicData-->"), 'utf-8'))
+# arduino.write(bytes(("BasicData-->"), 'utf-8'))
 while (1):
     # print("in")
     data = arduino.readline().decode('utf-8').rstrip()
-    #if ("StartDataWrite-->" in data): 
-    if (1): 
+    if ("StartDataWrite-->" in data): 
+    # if (1): 
         print("Start Writing Data to Arduino...")
-        read_serial()
+        # read_serial()
+        write_data()
     else: 
         if (data):
             print(data)
