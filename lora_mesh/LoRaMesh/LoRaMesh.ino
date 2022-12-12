@@ -12,7 +12,7 @@ uint8_t rounds = 0;
 uint8_t rx_done = 0;
 
 bool data_set_status = 0;
-bool start_data_setting = 0;
+//bool start_data_setting = 0;
 uint8_t nodeId = -1; //unique number
 uint8_t groupId = -1;  //group name set by group organizer
 uint8_t memberNum = -1;  //count of group members
@@ -54,44 +54,48 @@ void LEDblink(int code) {
 }
 
 void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
-  uint8_t nodeid = *p_nodeId; //unique number
-  uint8_t groupid = *p_groupId;  //group name set by group organizer
-  uint8_t membernum = *p_memberNum;  //count of group members
+//  uint8_t nodeid = *p_nodeId; //unique number
+//  uint8_t groupid = *p_groupId;  //group name set by group organizer
+//  uint8_t membernum = *p_memberNum;  //count of group members
   while (!data_set_status) {
+    LEDblink(10);
     while (!Serial.available());
-    if (Serial.readString().indexOf("nodeId-->") >= 0) {
+    String serialIn = Serial.readString();
+    Serial.println(serialIn);
+    if (serialIn.indexOf("nodeId-->") >= 0) {
       Serial.print(F("toPython-->nodeId-->"));
-      Serial.readString().replace("nodeId-->", "");
-      nodeid = Serial.readString().toInt();
-      EEPROM.write(0, nodeid);
-      Serial.println(String(nodeid));
+      serialIn.replace("nodeId-->", "");
+      *p_nodeId = serialIn.toInt();
+      EEPROM.write(0, *p_nodeId);
+      Serial.println(String(*p_nodeId));
     }
-    if (Serial.readString().indexOf("groupId-->") >= 0) {
+    if (serialIn.indexOf("groupId-->") >= 0) {
       Serial.print(F("toPython-->groupId-->"));
-      Serial.readString().replace("groupId-->", "");
-      groupid = Serial.readString().toInt();
-      EEPROM.write(1, groupid);
-      Serial.println(String(groupid));
+      serialIn.replace("groupId-->", "");
+      *p_groupId = serialIn.toInt();
+      EEPROM.write(1, *p_groupId);
+      Serial.println(String(*p_groupId));
     }
-    if (Serial.readString().indexOf("memberNum-->") >= 0) {
+    if (serialIn.indexOf("memberNum-->") >= 0) {
       Serial.print(F("toPython-->memberNum-->"));
-      Serial.readString().replace("memberNum-->", "");
-      membernum = Serial.readString().toInt();
-      EEPROM.write(2, membernum);
-      Serial.println(String(membernum));
+      serialIn.replace("memberNum-->", "");
+      *p_memberNum = serialIn.toInt();
+      EEPROM.write(2, *p_memberNum);
+      Serial.println(String(*p_memberNum));
     }
-    if (nodeid != -1 && groupid != -1 && membernum != -1) {
+    if (*p_nodeId != -1 && *p_groupId != -1 && *p_memberNum != -1) {
       data_set_status = 1;
       Serial.print(F("nodeId: "));
-      Serial.println(nodeid);
+      Serial.println(*p_nodeId);
       Serial.print(F("groupId: "));
-      Serial.println(groupid);
+      Serial.println(*p_groupId);
       Serial.print(F("memberNum: "));
-      Serial.println(membernum);
+      Serial.println(*p_memberNum);
     }
     else {
-      delay(1000);
+      delay(200);
     }
+    //serialIn = "";
   }
 }
 
@@ -114,28 +118,32 @@ void setup() {
   unsigned long waitforbtn = millis() + 3000;
   while (waitforbtn > millis()) {
     Serial.print(F("Waiting..."));
-    Serial.println(String((waitforbtn - millis()) / 1000));
-    int stat = 0;
-    stat = !digitalRead(BTN);
-    Serial.println(String(stat));
-    if (stat) {
+    Serial.println((waitforbtn - millis()) / 1000);
+    Serial.println(!digitalRead(BTN));
+    if (!digitalRead(BTN)) {
       digitalWrite(LED, HIGH);
       delay(5000);
       digitalWrite(LED, LOW);
-      start_data_setting = 1;
+      Serial.println(F("StartDataWrite-->"));
+      setBasicData(&nodeId, &groupId, &memberNum);
+    }
+    else {
+      nodeId = EEPROM.read(0);
+      groupId = EEPROM.read(1);
+      memberNum = EEPROM.read(2);
     }
     delay(500);
   }
-
-  if (start_data_setting) {
-    Serial.println(F("StartDataWrite-->"));
-    setBasicData(&nodeId, &groupId, &memberNum);
-  }
-  else {
-    nodeId = EEPROM.read(0);
-    groupId = EEPROM.read(1);
-    memberNum = EEPROM.read(2);
-  }
+//
+//  if (start_data_setting) {
+//    Serial.println(F("StartDataWrite-->"));
+//    setBasicData(&nodeId, &groupId, &memberNum);
+//  }
+//  else {
+//    nodeId = EEPROM.read(0);
+//    groupId = EEPROM.read(1);
+//    memberNum = EEPROM.read(2);
+//  }
 
   //setBasicData(&nodeid, &groupid, &memberNum);
   //Serial.println(F("test"));
