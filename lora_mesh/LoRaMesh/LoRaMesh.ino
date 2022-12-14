@@ -260,14 +260,13 @@ void getRouteInfoString(char *p, size_t len) {
     strcat(p, "\"r\":");
     sprintf(p + strlen(p), "%d", rssi[n - 1]);
     strcat(p, "}");
-    if (n < memberNum) {
-      strcat(p, ",");
-    }
-    else {
-      strcat(p, ",\"gId\":");
-      sprintf(p + strlen(p), "%d", groupId);
-    }
+    strcat(p, ",");
+//    if (n < memberNum) {
+//      strcat(p, ",");
+//    }
   }
+  strcat(p, "\"gId\":");
+  sprintf(p + strlen(p), "%d", groupId);
   strcat(p, "]");
 }
 
