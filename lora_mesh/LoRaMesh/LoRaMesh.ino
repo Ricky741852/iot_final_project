@@ -14,9 +14,9 @@ uint8_t rx_done = 0;
 
 bool data_set_status = 0;
 //bool start_data_setting = 0;
-uint8_t nodeId = -1; //unique number
-uint8_t groupId = -1;  //group name set by group organizer
-uint8_t memberNum = -1;  //count of group members
+uint8_t nodeId = 254; //unique number
+uint8_t groupId = 254;  //group name set by group organizer
+uint8_t memberNum = 254;  //count of group members
 
 uint8_t routes[N_NODES]; // full routing table for mesh
 int16_t rssi[N_NODES]; // signal strength info
@@ -59,32 +59,41 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
 //  uint8_t groupid = *p_groupId;  //group name set by group organizer
 //  uint8_t membernum = *p_memberNum;  //count of group members
   while (!data_set_status) {
+//    Serial.print(F("nId: "));
+//    Serial.println(*p_nodeId);
+//    Serial.print(F("gId: "));
+//    Serial.println(*p_groupId);
+//    Serial.print(F("mNum: "));
+//    Serial.println(*p_memberNum);
     LEDblink(10);
     while (!Serial.available());
     String serialIn = Serial.readString();
-    Serial.println(serialIn);
-    if (serialIn.indexOf("nodeId-->") >= 0) {
-      Serial.print(F("toPython-->nodeId-->"));
-      serialIn.replace("nodeId-->", "");
+//    Serial.print(serialIn);
+    if (serialIn.indexOf("nId-->") >= 0) {
+      Serial.print(F("toPython-->nId-->"));
+      serialIn.replace("nId-->", "");
+//      Serial.println(serialIn);
+//      Serial.println(serialIn.toInt());
       *p_nodeId = serialIn.toInt();
+//      Serial.println(*p_nodeId);
       EEPROM.write(0, *p_nodeId);
       Serial.println(String(*p_nodeId));
     }
-    if (serialIn.indexOf("groupId-->") >= 0) {
-      Serial.print(F("toPython-->groupId-->"));
-      serialIn.replace("groupId-->", "");
+    else if (serialIn.indexOf("gId-->") >= 0) {
+      Serial.print(F("toPython-->gId-->"));
+      serialIn.replace("gId-->", "");
       *p_groupId = serialIn.toInt();
       EEPROM.write(1, *p_groupId);
       Serial.println(String(*p_groupId));
     }
-    if (serialIn.indexOf("memberNum-->") >= 0) {
-      Serial.print(F("toPython-->memberNum-->"));
-      serialIn.replace("memberNum-->", "");
+    else if (serialIn.indexOf("mNum-->") >= 0) {
+      Serial.print(F("toPython-->mNum-->"));
+      serialIn.replace("mNum-->", "");
       *p_memberNum = serialIn.toInt();
       EEPROM.write(2, *p_memberNum);
       Serial.println(String(*p_memberNum));
     }
-    if (*p_nodeId != -1 && *p_groupId != -1 && *p_memberNum != -1) {
+    if (*p_nodeId != 254 && *p_groupId != 254 && *p_memberNum != 254) {
       data_set_status = 1;
       Serial.print(F("nodeId: "));
       Serial.println(*p_nodeId);
@@ -94,9 +103,9 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
       Serial.println(*p_memberNum);
     }
     else {
-      delay(200);
+      delay(500);
     }
-    //serialIn = "";
+    serialIn = "";
   }
 }
 
@@ -255,7 +264,7 @@ void getRouteInfoString(char *p, size_t len) {
       strcat(p, ",");
     }
     else {
-      strcat(p, ",gId=");
+      strcat(p, ",\"gId\":");
       sprintf(p + strlen(p), "%d", groupId);
     }
   }
@@ -297,7 +306,7 @@ void loop() {
   }
 
   for (uint8_t i = 0; i < memberNum; i++) {
-    int8_t n = (nodeId + i) % 4 + 1;
+    int8_t n = (nodeId + i) % memberNum + 1;
     // int n = i + 1;
     if (n == nodeId) {
       continue; // self
