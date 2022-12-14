@@ -11,9 +11,12 @@ for p in port:
         print(p.device)
         current_device = p.device
 
-nodeId = input("nodeId: ")
-groupId = input("groupId: ")
-memberNum = input("memberNum: ")
+# nodeId = input("nodeId: ")
+# groupId = input("groupId: ")
+# memberNum = input("memberNum: ")
+nodeId = 3
+groupId = 2
+memberNum = 4
 
 back_nodeId = -1
 back_groupId = -1
@@ -23,6 +26,7 @@ key_nodeId = "nodeId-->"
 key_groupId = "groupId-->"
 key_memberNum = "memberNum-->"
 key_toPython = "toPython-->"
+
 # write data to arduino
 def write_data():
     arduino.write((key_nodeId + nodeId).encode())
@@ -76,9 +80,7 @@ while (1):
     # print("in")
     data = arduino.readline().decode('utf-8').rstrip()
     if ("StartDataWrite-->" in data): 
-    # if (1): 
         print("Start Writing Data to Arduino...")
-        # read_serial()
         write_data()
     else: 
         if (data):
