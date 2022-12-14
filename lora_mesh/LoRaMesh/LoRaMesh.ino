@@ -2,6 +2,7 @@
 #include <RHRouter.h>
 #include <RHMesh.h>
 #include <RH_RF95.h>
+//#include <RHGenericDriver.h>
 
 #define RH_HAVE_SERIAL
 #define LED 8
@@ -134,17 +135,7 @@ void setup() {
     }
     delay(500);
   }
-//
-//  if (start_data_setting) {
-//    Serial.println(F("StartDataWrite-->"));
-//    setBasicData(&nodeId, &groupId, &memberNum);
-//  }
-//  else {
-//    nodeId = EEPROM.read(0);
-//    groupId = EEPROM.read(1);
-//    memberNum = EEPROM.read(2);
-//  }
-
+  
   //setBasicData(&nodeid, &groupid, &memberNum);
   //Serial.println(F("test"));
   Serial.println(nodeId);
@@ -170,6 +161,7 @@ void setup() {
   }
   rf95.setTxPower(23, false);
   rf95.setFrequency(433.0);
+  rf95.setHeaderTo(groupId);
   rf95.setCADTimeout(500);
 
   // Possible configurations:
@@ -321,7 +313,7 @@ void loop() {
 
     // send an acknowledged message to the target node
     manager -> setTimeout(5000);
-    uint8_t error = manager->sendtoWait((uint8_t *)buf, strlen(buf), n);
+    uint8_t error = manager->sendtoWait((uint8_t *)buf, strlen(buf), n, groupId);
     // Serial.println("HERE");
     if (error != RH_ROUTER_ERROR_NONE) {
       Serial.println();
@@ -362,28 +354,42 @@ void loop() {
       int waitTime = nextTransmit - millis();
       uint8_t len = sizeof(buf);
       uint8_t from;
-      if (manager->recvfromAckTimeout((uint8_t *)buf, &len, waitTime, &from)) {
-        buf[len] = '\0'; // null terminate string
-        Serial.print(from);
-        Serial.print(F("->"));
-        Serial.print(F(" :"));
-        Serial.println(buf);
-        if (nodeId == 1) printNodeInfo(from, buf); // debugging
-        
-        // we received data from node 'from', but it may have actually come from an intermediate node
-        RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
-        if (route->next_hop != 0) {
-//          Serial.println(getRecvGroupId());
-          groups[route->next_hop - 1] = getRecvGroupId();
-//          Serial.println(groups[route->next_hop - 1]);
-          if (groups[route->next_hop - 1] == groupId) {
-            rssi[route->next_hop - 1] = rf95.lastRssi();
+      //uint8_t gid = manager->headerFrom();
+      //Serial.println(gid);
+      uint8_t gid;
+      if (manager->recvfromAckTimeout((uint8_t *)buf, &len, waitTime, &from, NULL, NULL, &gid)) {
+        Serial.print(F("flags: "));
+        Serial.println(gid);
+        if (gid == groupId) {
+          buf[len] = '\0'; // null terminate string
+          Serial.print(from);
+          Serial.print(F("->"));
+          Serial.print(F(" :"));
+          Serial.println(buf);
+          if (nodeId == 1) printNodeInfo(from, buf); // debugging
+          
+          // we received data from node 'from', but it may have actually come from an intermediate node
+          RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
+          if (route->next_hop != 0) {
+  //          Serial.println(getRecvGroupId());
+            groups[route->next_hop - 1] = getRecvGroupId();
+  //          Serial.println(groups[route->next_hop - 1]);
+            if (groups[route->next_hop - 1] == groupId) {
+              rssi[route->next_hop - 1] = rf95.lastRssi();
+            }
+            Serial.print(F("\t<< "));
+            Serial.print(rf95.lastRssi());
+            Serial.print(F(", "));
+            Serial.print(rssitoDistance(rf95.lastRssi()));
+            Serial.println(F("m >>"));
           }
-          Serial.print(F("\t<< "));
-          Serial.print(rf95.lastRssi());
-          Serial.print(F(", "));
-          Serial.print(rssitoDistance(rf95.lastRssi()));
-          Serial.println(F("m >>"));
+        }
+        else {
+          if (manager->deleteRouteTo(from)) {
+            Serial.print(F("node "));
+            Serial.print(from);
+            Serial.println(F(" was not in same group."));
+          }
         }
       }
     }
