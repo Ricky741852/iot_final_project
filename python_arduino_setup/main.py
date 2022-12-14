@@ -10,6 +10,7 @@ for p in port:
     if ("/dev/cu.usb" in p.device):
         print(p.device)
         current_device = p.device
+current_device = "/dev/cu.usbserial-1430"
 
 # nodeId = input("nodeId: ")
 # groupId = input("groupId: ")
@@ -29,11 +30,11 @@ key_toPython = "toPython-->"
 
 # write data to arduino
 def write_data():
-    arduino.write((key_nodeId + nodeId).encode())
+    arduino.write((key_nodeId + str(nodeId)).encode())
     read_back()
-    arduino.write((key_groupId + groupId).encode())
+    arduino.write((key_groupId + str(groupId)).encode())
     read_back()
-    arduino.write((key_memberNum + memberNum).encode())
+    arduino.write((key_memberNum + str(memberNum)).encode())
     read_back()
 
 def read_back():

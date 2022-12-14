@@ -170,7 +170,7 @@ void setup() {
   }
   rf95.setTxPower(23, false);
   rf95.setFrequency(433.0);
-  rf95.setHeaderTo(groupId);
+//  rf95.setHeaderTo(groupId);
   rf95.setCADTimeout(500);
 
   // Possible configurations:
