@@ -369,36 +369,27 @@ void loop() {
       if (manager->recvfromAckTimeout((uint8_t *)buf, &len, waitTime, &from, NULL, NULL, &gid)) {
         Serial.print(F("flags: "));
         Serial.println(gid);
-        if (gid == groupId) {
-          buf[len] = '\0'; // null terminate string
-          Serial.print(from);
-          Serial.print(F("->"));
-          Serial.print(F(" :"));
-          Serial.println(buf);
-          if (nodeId == 1) printNodeInfo(from, buf); // debugging
-          
-          // we received data from node 'from', but it may have actually come from an intermediate node
-          RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
-          if (route->next_hop != 0) {
-  //          Serial.println(getRecvGroupId());
-            groups[route->next_hop - 1] = getRecvGroupId();
-  //          Serial.println(groups[route->next_hop - 1]);
-            if (groups[route->next_hop - 1] == groupId) {
-              rssi[route->next_hop - 1] = rf95.lastRssi();
-            }
-            Serial.print(F("\t<< "));
-            Serial.print(rf95.lastRssi());
-            Serial.print(F(", "));
-            Serial.print(rssitoDistance(rf95.lastRssi()));
-            Serial.println(F("m >>"));
+        buf[len] = '\0'; // null terminate string
+        Serial.print(from);
+        Serial.print(F("->"));
+        Serial.print(F(" :"));
+        Serial.println(buf);
+        if (nodeId == 1) printNodeInfo(from, buf); // debugging
+        
+        // we received data from node 'from', but it may have actually come from an intermediate node
+        RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
+        if (route->next_hop != 0) {
+//          Serial.println(getRecvGroupId());
+          groups[route->next_hop - 1] = getRecvGroupId();
+//          Serial.println(groups[route->next_hop - 1]);
+          if (groups[route->next_hop - 1] == groupId) {
+            rssi[route->next_hop - 1] = rf95.lastRssi();
           }
-        }
-        else {
-          if (manager->deleteRouteTo(from)) {
-            Serial.print(F("node "));
-            Serial.print(from);
-            Serial.println(F(" was not in same group."));
-          }
+          Serial.print(F("\t<< "));
+          Serial.print(rf95.lastRssi());
+          Serial.print(F(", "));
+          Serial.print(rssitoDistance(rf95.lastRssi()));
+          Serial.println(F("m >>"));
         }
       }
     }
