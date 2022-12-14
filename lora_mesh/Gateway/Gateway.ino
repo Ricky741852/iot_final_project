@@ -17,18 +17,18 @@ Adafruit_SSD1306 display(-1);
 Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN, NEO_RGB + NEO_KHZ800);
 #endif
 
-const char* ssid = "CSIE-B1";
+const char* ssid = "Jason";
 //const char* ssid = "Hunter_Home";
-const char* password = "77346657";
+const char* password = "11111111";
 //const char* password = "QWERTYUIOP1234567890";
 const char* mqtt_server = "test.mosquitto.org";
-int mqtt_port = 8883;
+int mqtt_port = 1883;
 const char* mqtt_username = "jason";
 const char* mqtt_password = "jason";
 const char* dataTopic = "mesh_gateway/data";
 
 //WiFiClient espClient;
-WiFiClientSecure espClient;
+WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
 char data[128];
 
@@ -42,11 +42,14 @@ void mqtt_connect() {
     mqtt_clientId += String(random(0xffff), HEX);
     if (mqtt_client.connect(mqtt_clientId.c_str(), mqtt_username, mqtt_password)) {
       log("connected");
+      log("test in connected");
     } else {
       log("failed, rc=", false);
       log(mqtt_client.state());
       delay(2000);
+      log("test in failed");
     }
+    log("test");
   }
 }
 
@@ -88,14 +91,16 @@ void setup()   {
 }
 
 void log(const char *s) {
-#ifdef OLED
-  if (display.getCursorY() > 58) {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-  }
-  display.println(s);
-  display.display(); delay(1);
-#endif
+//#ifdef OLED
+//  if (display.getCursorY() > 58) {
+//    display.clearDisplay();
+//    display.setCursor(0, 0);
+//  }
+//  display.println(s);
+//  display.display(); delay(1);
+//#endif
+  Serial.println(s);
+  delay(1);
 }
 
 void log(const char *s, boolean newline) {
