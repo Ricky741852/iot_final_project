@@ -1,27 +1,29 @@
 #include <EEPROM.h>
+//#include <math.h>
 #include <RHRouter.h>
 #include <RHMesh.h>
 #include <RH_RF95.h>
-//#include <RHGenericDriver.h>
-
 #define RH_HAVE_SERIAL
 #define LED 8
 #define BTN 7
-#define N_NODES 4
+#define N_NODES 6
+//#define N_NODES 2 //test
 
-uint8_t rounds = 0;
-uint8_t rx_done = 0;
+int rounds = 0;
+int rx_done = 0;
 
-bool data_set_status = 0;
-//bool start_data_setting = 0;
-uint8_t nodeId = 254; //unique number
-uint8_t groupId = 254;  //group name set by group organizer
-uint8_t memberNum = 254;  //count of group members
+int data_set_status = 0;
+int start_data_setting = 0;
+int nodeid = -1; //unique number
+int groupid = -1;  //group name set by group organizer
+int memberNum = -1;  //count of group members
+
+int nodeId;
+int groupId;
 
 uint8_t routes[N_NODES]; // full routing table for mesh
 int16_t rssi[N_NODES]; // signal strength info
-uint8_t groups[N_NODES]; // group info
-uint8_t offline[N_NODES]; // offline info
+int offline[N_NODES];
 
 // Singleton instance of the radio driver
 RH_RF95 rf95;
@@ -46,66 +48,60 @@ void LEDblink(int code) {
   }
   else {
     for (int i = 0; i < code; i++) {
-      digitalWrite(LED, HIGH);delay(100);
-      digitalWrite(LED, LOW);delay(100);
+      digitalWrite(LED, HIGH);
+      delay(100);
+      digitalWrite(LED, LOW);
+      delay(100);
     }
   }
+
+  //  Serial.println("done");
 
   return;
 }
 
-void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
-//  uint8_t nodeid = *p_nodeId; //unique number
-//  uint8_t groupid = *p_groupId;  //group name set by group organizer
-//  uint8_t membernum = *p_memberNum;  //count of group members
+void setBasicData(int *p_nodeId, int *p_groupId, int *p_memberNum) {
+  int nodeid = *p_nodeId; //unique number
+  int groupid = *p_groupId;  //group name set by group organizer
+  int memberNum = *p_memberNum;  //count of group members
   while (!data_set_status) {
-//    Serial.print(F("nId: "));
-//    Serial.println(*p_nodeId);
-//    Serial.print(F("gId: "));
-//    Serial.println(*p_groupId);
-//    Serial.print(F("mNum: "));
-//    Serial.println(*p_memberNum);
-    LEDblink(10);
+    // Serial.println(F("toPython-->Started"));
+    String str = "";
     while (!Serial.available());
-    String serialIn = Serial.readString();
-//    Serial.print(serialIn);
-    if (serialIn.indexOf("nId-->") >= 0) {
-      Serial.print(F("toPython-->nId-->"));
-      serialIn.replace("nId-->", "");
-//      Serial.println(serialIn);
-//      Serial.println(serialIn.toInt());
-      *p_nodeId = serialIn.toInt();
-//      Serial.println(*p_nodeId);
-      EEPROM.write(0, *p_nodeId);
-      Serial.println(String(*p_nodeId));
+    str = Serial.readString();
+    if (str) {
+      // Serial.println(F("get str"));
     }
-    else if (serialIn.indexOf("gId-->") >= 0) {
-      Serial.print(F("toPython-->gId-->"));
-      serialIn.replace("gId-->", "");
-      *p_groupId = serialIn.toInt();
-      EEPROM.write(1, *p_groupId);
-      Serial.println(String(*p_groupId));
+    if (str.indexOf("nodeId-->") >= 0) {
+      Serial.print(F("toPython-->nodeId-->"));
+      str.replace("nodeId-->", "");
+      nodeid = str.toInt();
+      EEPROM.write(0, nodeid);
+      Serial.println(String(nodeid));
     }
-    else if (serialIn.indexOf("mNum-->") >= 0) {
-      Serial.print(F("toPython-->mNum-->"));
-      serialIn.replace("mNum-->", "");
-      *p_memberNum = serialIn.toInt();
-      EEPROM.write(2, *p_memberNum);
-      Serial.println(String(*p_memberNum));
+    if (str.indexOf("groupId-->") >= 0) {
+      Serial.print(F("toPython-->groupId-->"));
+      str.replace("groupId-->", "");
+      groupid = str.toInt();
+      EEPROM.write(1, groupid);
+      Serial.println(String(groupid));
     }
-    if (*p_nodeId != 254 && *p_groupId != 254 && *p_memberNum != 254) {
+    if (str.indexOf("memberNum-->") >= 0) {
+      Serial.print(F("toPython-->memberNum-->"));
+      str.replace("memberNum-->", "");
+      memberNum = str.toInt();
+      EEPROM.write(2, memberNum);
+      Serial.println(String(memberNum));
+    }
+    if (nodeid != -1 && groupid != -1 && memberNum != -1) {
       data_set_status = 1;
-      Serial.print(F("nodeId: "));
-      Serial.println(*p_nodeId);
-      Serial.print(F("groupId: "));
-      Serial.println(*p_groupId);
-      Serial.print(F("memberNum: "));
-      Serial.println(*p_memberNum);
+      // Serial.println(F("toPython-->all data done. "));
+      // break;
     }
     else {
-      delay(500);
+      // Serial.println(F("toPython-->redo "));
+      delay(1000);
     }
-    serialIn = "";
   }
 }
 
@@ -125,31 +121,43 @@ void setup() {
   Serial.setTimeout(1);
   while (!Serial) ; // Wait for serial port to be available
 
+  
   unsigned long waitforbtn = millis() + 3000;
   while (waitforbtn > millis()) {
     Serial.print(F("Waiting..."));
-    Serial.println((waitforbtn - millis()) / 1000);
-    Serial.println(!digitalRead(BTN));
-    if (!digitalRead(BTN)) {
+    Serial.println(String((waitforbtn - millis()) / 1000));
+    int stat = 0;
+    stat = !digitalRead(BTN);
+    Serial.println(String(stat));
+    if (stat) {
       digitalWrite(LED, HIGH);
       delay(5000);
       digitalWrite(LED, LOW);
-      Serial.println(F("StartDataWrite-->"));
-      setBasicData(&nodeId, &groupId, &memberNum);
-    }
-    else {
-      nodeId = EEPROM.read(0);
-      groupId = EEPROM.read(1);
-      memberNum = EEPROM.read(2);
+      start_data_setting = 1;
     }
     delay(500);
   }
-  
-  //setBasicData(&nodeid, &groupid, &memberNum);
-  //Serial.println(F("test"));
-  Serial.println(nodeId);
-  Serial.println(groupId);
-  Serial.println(memberNum);
+
+  if (start_data_setting) {
+    Serial.println(F("StartDataWrite-->"));
+    setBasicData(&nodeid, &groupid, &memberNum);
+  }
+
+  setBasicData(&nodeid, &groupid, &memberNum);
+  nodeId = EEPROM.read(0);
+  groupId = EEPROM.read(1);
+  memberNum = EEPROM.read(2);
+//  Serial.println(nodeId);
+//  Serial.println(groupId);
+//  Serial.println(N_NODES);
+
+  // Serial.println("");
+  // for (int i = 0; i < EEPROM.length(); i++) {
+    // Serial.print(i);
+    // Serial.print(": ");
+    // Serial.println(EEPROM.read(i));
+  // }
+  // Serial.println("");
   
   if (nodeId > 10) {
     Serial.print(F("EEPROM nodeId invalid: "));
@@ -157,20 +165,17 @@ void setup() {
     nodeId = 1;
   }
   Serial.print(F("initializing node "));
-  Serial.print(nodeId);
-  Serial.print(F(" at group "));
-  Serial.println(groupId);
+  Serial.println(String(nodeId));
 
   manager = new RHMesh(rf95, nodeId);
 
   if (!manager->init()) {
     Serial.println(F("init failed"));
   } else {
-    Serial.println(F("init done"));
+    Serial.println("done");
   }
   rf95.setTxPower(23, false);
   rf95.setFrequency(433.0);
-//  rf95.setHeaderTo(groupId);
   rf95.setCADTimeout(500);
 
   // Possible configurations:
@@ -193,14 +198,14 @@ void setup() {
     }
   }
 
-  Serial.println(F("RF95 ready"));
+  Serial.println("RF95 ready");
 
-  for (uint8_t n = 1; n <= memberNum; n++) {
+  for (uint8_t n = 1; n <= N_NODES; n++) {
     routes[n - 1] = 0;
     rssi[n - 1] = 0;
-    groups[n - 1] = 0;
     offline[n - 1] = 0;
   }
+
   printFreeMem();
 }
 
@@ -221,52 +226,43 @@ const __FlashStringHelper* getErrorString(uint8_t error) {
 }
 
 double rssitoDistance(double rssi, int a = 67, double n = 1.192913874) {
-  return pow(10, ((abs(rssi) - a) / (10 * n)));
+  double ra = abs(rssi);
+  double ka = (ra - a) / (10 * n);
+  double distance = pow(10, ka);
+
+  return distance;
 }
 
 void updateRoutingTable() {
-  for (uint8_t n = 1; n <= memberNum; n++) {
+  for (uint8_t n = 1; n <= N_NODES; n++) {
     RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
     if (n == nodeId) {
       routes[n - 1] = 255; // self
-      groups[n - 1] = groupId;
     } else {
       routes[n - 1] = route->next_hop;
       if (routes[n - 1] == 0) {
         // if we have no route to the node, reset the received signal strength
-        //rssi[n - 1] = 0;
+        rssi[n - 1] = 0;
       }
     }
   }
-}
-
-int getRecvGroupId() {
-  uint8_t fgroupId = (uint8_t)(buf[strlen(buf) - 2] - '0');
-//  Serial.println(fgroupId);
-  return fgroupId;
 }
 
 // Create a JSON string with the routing info to each node
 void getRouteInfoString(char *p, size_t len) {
   p[0] = '\0';
   strcat(p, "[");
-  for (uint8_t n = 1; n <= memberNum; n++) {
+  for (uint8_t n = 1; n <= N_NODES; n++) {
     strcat(p, "{\"n\":");
     sprintf(p + strlen(p), "%d", routes[n - 1]);
-    strcat(p, ",");
-    strcat(p, "\"g\":");
-    sprintf(p + strlen(p), "%d", groups[n - 1]);
     strcat(p, ",");
     strcat(p, "\"r\":");
     sprintf(p + strlen(p), "%d", rssi[n - 1]);
     strcat(p, "}");
-    strcat(p, ",");
-//    if (n < memberNum) {
-//      strcat(p, ",");
-//    }
+    if (n < N_NODES) {
+      strcat(p, ",");
+    }
   }
-  strcat(p, "\"gId\":");
-  sprintf(p + strlen(p), "%d", groupId);
   strcat(p, "]");
 }
 
@@ -284,28 +280,22 @@ void printNodeInfo(uint8_t node, char *s) {
 void loop() {
   rounds++;
   
-  Serial.print(F("======= "));
-  Serial.print(rounds);
-  Serial.println(F(" ======="));
+  Serial.println("======= " + String(rounds) + " =======");
 
   rx_done = 0;
 
   for (int i = 0; i < memberNum; i++) {
-//    Serial.print(i);
-//    Serial.print(F(": "));
-//    Serial.println(offline[i]);
-    if (offline[i] > 5) {
+    if (offline[i] > (memberNum+1)) {
       Serial.print(F("node "));
       Serial.print(i + 1);
-      Serial.print(F(" offline: "));
-      Serial.println(rssitoDistance(rssi[i]));
+      Serial.println(F(" is offline! "));
 
       LEDblink(i + 1);
     }
   }
 
-  for (uint8_t i = 0; i < memberNum; i++) {
-    int8_t n = (nodeId + i) % memberNum + 1;
+  for (uint8_t i = 0; i < N_NODES; i++) {
+    int n = (nodeId + i) % 4 + 1;
     // int n = i + 1;
     if (n == nodeId) {
       continue; // self
@@ -321,14 +311,14 @@ void loop() {
 
     // send an acknowledged message to the target node
     manager -> setTimeout(5000);
-    uint8_t error = manager->sendtoWait((uint8_t *)buf, strlen(buf), n, groupId);
+    uint8_t error = manager->sendtoWait((uint8_t *)buf, strlen(buf), n);
     // Serial.println("HERE");
     if (error != RH_ROUTER_ERROR_NONE) {
       Serial.println();
       Serial.print(F(" ! "));
       Serial.println(getErrorString(error));
 
-      offline[n - 1]++;
+      offline[n - i]++;
 
       // LEDblink(error);
     } else {
@@ -342,9 +332,7 @@ void loop() {
       // we received an acknowledgement from the next hop for the node we tried to send to.
       RHRouter::RoutingTableEntry *route = manager->getRouteTo(n);
       if (route->next_hop != 0) {
-        if (groups[route->next_hop - 1] == groupId) {
-          rssi[route->next_hop - 1] = rf95.lastRssi();
-        }
+        rssi[route->next_hop - 1] = rf95.lastRssi();
         Serial.print(F("<< "));
         Serial.print(rf95.lastRssi());
         Serial.print(F(", "));
@@ -352,7 +340,7 @@ void loop() {
         Serial.println(F("m >>"));
       }
     }
-    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
+    //    if (nodeId == 1) printNodeInfo(nodeId, buf); // debugging
 
     // listen for incoming messages. Wait a random amount of time before we transmit
     // again to the next node
@@ -362,28 +350,17 @@ void loop() {
       int waitTime = nextTransmit - millis();
       uint8_t len = sizeof(buf);
       uint8_t from;
-      //uint8_t gid = manager->headerFrom();
-      //Serial.println(gid);
-      uint8_t gid;
-      if (manager->recvfromAckTimeout((uint8_t *)buf, &len, waitTime, &from, NULL, NULL, &gid)) {
-        Serial.print(F("flags: "));
-        Serial.println(gid);
+      if (manager->recvfromAckTimeout((uint8_t *)buf, &len, waitTime, &from)) {
         buf[len] = '\0'; // null terminate string
         Serial.print(from);
         Serial.print(F("->"));
         Serial.print(F(" :"));
         Serial.println(buf);
-        if (nodeId == 1) printNodeInfo(from, buf); // debugging
-        
+        //        if (nodeId == 1) printNodeInfo(from, buf); // debugging
         // we received data from node 'from', but it may have actually come from an intermediate node
         RHRouter::RoutingTableEntry *route = manager->getRouteTo(from);
         if (route->next_hop != 0) {
-//          Serial.println(getRecvGroupId());
-          groups[route->next_hop - 1] = getRecvGroupId();
-//          Serial.println(groups[route->next_hop - 1]);
-          if (groups[route->next_hop - 1] == groupId) {
-            rssi[route->next_hop - 1] = rf95.lastRssi();
-          }
+          rssi[route->next_hop - 1] = rf95.lastRssi();
           Serial.print(F("\t<< "));
           Serial.print(rf95.lastRssi());
           Serial.print(F(", "));
@@ -394,7 +371,7 @@ void loop() {
     }
   }
   Serial.print(F("rx_done: "));
-  Serial.print(rx_done);
+  Serial.print(String(rx_done));
   Serial.println(F("/3"));
-//  printFreeMem();
+  printFreeMem();
 }
