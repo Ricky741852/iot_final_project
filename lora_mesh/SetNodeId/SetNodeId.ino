@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 
 // change this to be the ID of your node in the mesh network
-uint8_t nodeId = 4;
+uint8_t nodeId = 1;
 uint8_t groupId = 1;
 uint8_t memberNum = 4;
 
