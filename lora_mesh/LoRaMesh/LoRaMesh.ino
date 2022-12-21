@@ -55,9 +55,6 @@ void LEDblink(int code) {
 }
 
 void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
-//  uint8_t nodeid = *p_nodeId; //unique number
-//  uint8_t groupid = *p_groupId;  //group name set by group organizer
-//  uint8_t membernum = *p_memberNum;  //count of group members
   while (!data_set_status) {
     LEDblink(10);
     while (!Serial.available());
@@ -84,7 +81,7 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
       EEPROM.write(2, *p_memberNum);
       Serial.println(String(*p_memberNum));
     }
-    if (*p_nodeId != -1 && *p_groupId != -1 && *p_memberNum != -1) {
+    if (*p_nodeId != 254 && *p_groupId != 254 && *p_memberNum != 254) {
       data_set_status = 1;
       Serial.print(F("nodeId: "));
       Serial.println(*p_nodeId);
@@ -94,21 +91,14 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
       Serial.println(*p_memberNum);
     }
     else {
-      delay(200);
+      delay(500);
     }
-    //serialIn = "";
+    serialIn = "";
   }
 }
 
-void printFreeMem() {
-  Serial.print(F("mem = "));
-  Serial.println(freeMem());
-
-  return;
-}
-
 void setup() {
-  randomSeed(analogRead(0));
+  randomSeed(0);
   pinMode(BTN, INPUT_PULLUP);
   pinMode(LED, OUTPUT);
   LEDblink(0);
@@ -133,11 +123,11 @@ void setup() {
       groupId = EEPROM.read(1);
       memberNum = EEPROM.read(2);
     }
-    delay(500);
+    delay(1000);
   }
   
   //setBasicData(&nodeid, &groupid, &memberNum);
-  //Serial.println(F("test"));
+  Serial.println(F(""));
   Serial.println(nodeId);
   Serial.println(groupId);
   Serial.println(memberNum);
@@ -154,15 +144,19 @@ void setup() {
 
   manager = new RHMesh(rf95, nodeId);
 
-  if (!manager->init()) {
+//  if (!manager->init()) {
+//    Serial.println(F("init failed"));
+//  } else {
+//    Serial.println(F("init done"));
+//  }
+  while (!manager->init()) {
     Serial.println(F("init failed"));
-  } else {
-    Serial.println(F("init done"));
   }
+  Serial.println(F("init done"));
   rf95.setTxPower(23, false);
   rf95.setFrequency(433.0);
   rf95.setHeaderTo(groupId);
-  rf95.setCADTimeout(500);
+//  rf95.setCADTimeout(500);
 
   // Possible configurations:
   // Bw125Cr45Sf128 (the chip default)
@@ -192,7 +186,7 @@ void setup() {
     groups[n - 1] = 0;
     offline[n - 1] = 0;
   }
-  printFreeMem();
+  Serial.println(freeMem());
 }
 
 const __FlashStringHelper* getErrorString(uint8_t error) {
