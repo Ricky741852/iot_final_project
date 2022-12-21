@@ -90,14 +90,14 @@ def data_selector():
         # select = input("please select: ")
         for i in range(1, 5):
             if (str(i) == "1"):
-                print("writing nodeID...")
-            elif (str(i) == 2):
-                print("writing groupID...")
-            elif (str(i) == 3):
+                print("writing nodeId...")
+            elif (str(i) == "2"):
+                print("writing groupId...")
+            elif (str(i) == "3"):
                 print("writing memberNum...")
-            elif (str(i) == 4):
+            elif (str(i) == "4"):
                 print("exit")
-                break
+                # break
             write_data(i)
 
 # arduino.write(bytes(("BasicData-->"), 'utf-8'))
