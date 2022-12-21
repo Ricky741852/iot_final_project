@@ -17,76 +17,68 @@ nodeId = int(input("nodeId: "))
 groupId = int(input("groupId: "))
 memberNum = int(input("memberNum: "))
 
+back_nodeId = 253
+back_groupId = 253
+back_memberNum = 253
+
 key_nodeId = "nodeId-->"
 key_groupId = "groupId-->"
 key_memberNum = "memberNum-->"
 key_toPython = "toPython-->"
 
+def clear_buf():
+    for i in range(5):
+        data = arduino.readline().decode('utf-8').rstrip()
+
 # write data to arduino
 def write_data(select):
-    back_nodeId = 253
-    back_groupId = 253
-    back_memberNum = 253
+    global back_nodeId
+    global back_groupId
+    global back_memberNum
+    clear_buf()
     if (select == 1):
         print("nodeId: " + str(nodeId))
-        print("python: " + key_nodeId + str(nodeId))
-        print("waiting", end="")
+        # print("python: " + key_nodeId + str(nodeId))
+        # print("waiting", end="")
         while (back_nodeId != nodeId):
-            print(".", end="")
-            arduino.write((key_nodeId + str(nodeId)).encode())
+            # print(".", end="")
+            arduino.write((key_nodeId + str(nodeId) + '\n').encode())
             back_nodeId = read_back(nodeId, key_nodeId)
-        print("<<< nodeId set! >>>\n")
+        print("<<< nodeId set! >>>")
     elif (select == 2):
         print("groupId: " + str(groupId))
-        print("python: " + key_groupId + str(groupId))
-        print("waiting", end="")
+        # print("python: " + key_groupId + str(groupId))
+        # print("waiting", end="")
         while (back_groupId != groupId):
-            print(".", end="")
-            arduino.write((key_groupId + str(groupId)).encode())
+            # print(".", end="")
+            arduino.write((key_groupId + str(groupId) + '\n').encode())
             back_groupId = read_back(groupId, key_groupId)
-        print("<<< groupId set! >>>\n")
+        print("<<< groupId set! >>>")
     elif (select == 3):
         print("memberNum: " + str(memberNum))
-        print("python: " + key_memberNum + str(memberNum))
-        print("waiting", end="")
+        # print("python: " + key_memberNum + str(memberNum))
+        # print("waiting", end="")
         while (back_memberNum != memberNum):
-            print(".", end="")
-            arduino.write((key_memberNum + str(memberNum)).encode())
+            # print(".", end="")
+            arduino.write((key_memberNum + str(memberNum) + '\n').encode())
             back_memberNum = read_back(memberNum, key_memberNum)
-        print("<<< memberNum set! >>>\n")
+        print("<<< memberNum set! >>>")
     elif (nodeId == back_nodeId) and (groupId == back_groupId) and (memberNum == back_memberNum):
+        global data_set_status
         data_set_status = 1
 
 def read_back(origin, key):
-    time.sleep(1)
+    time.sleep(2)
     # print(str(origin) + ": " + str(back))
     data = arduino.readline().decode('utf-8').rstrip()
     if (data):
         if (key_toPython in data):
             data = data.replace(key_toPython, "")
-            print("arduino: " + data)
+            # print("arduino: " + data)
             if (key in data):
                 back = data.replace(key, "")
-                print(str(origin) + ", " + back)
+                # print(str(origin) + ", " + back)
                 return int(back)
-                # if (not compare(origin, back)):
-                #     write_data()
-
-# def compare(a, b):
-#     if (a != b):
-#         return 0
-#     else:
-#         return 1
-
-# print(arduino)
-def read_serial():
-    while(1):
-        write_data()
-        data = arduino.readline().decode('utf-8').rstrip()
-        if (data):
-            print(data)
-            # if (key_toPython in data):
-            #     print(data.replace(key_toPython, ""))
 
 # init board
 arduino = serial.Serial(current_device, 115200, timeout=0.1)
@@ -94,15 +86,19 @@ arduino = serial.Serial(current_device, 115200, timeout=0.1)
 def data_selector():
     select = 0
     while(data_set_status != 1):
-        print("1. nodeId\t 2. groupId\t3. memberNum")
-        select = input("please select: ")
-        if (select == "1"):
-            print("writing nodeID...")
-        elif (select == 2):
-            print("writing groupID...")
-        elif (select == 3):
-            print("writing memberNum...")
-        write_data(int(select))
+        # print("1. nodeId\t 2. groupId\t3. memberNum\t4. end")
+        # select = input("please select: ")
+        for i in range(1, 5):
+            if (str(i) == "1"):
+                print("writing nodeID...")
+            elif (str(i) == 2):
+                print("writing groupID...")
+            elif (str(i) == 3):
+                print("writing memberNum...")
+            elif (str(i) == 4):
+                print("exit")
+                break
+            write_data(i)
 
 # arduino.write(bytes(("BasicData-->"), 'utf-8'))
 while (1):

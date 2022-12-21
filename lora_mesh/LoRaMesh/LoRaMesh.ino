@@ -58,7 +58,8 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
   while (!data_set_status) {
     LEDblink(10);
     while (!Serial.available());
-    String serialIn = Serial.readString();
+//    String serialIn = Serial.readString();
+    String serialIn = Serial.readStringUntil('\n');
     Serial.println(serialIn);
     if (serialIn.indexOf("nodeId-->") >= 0) {
       Serial.print(F("toPython-->nodeId-->"));
@@ -91,7 +92,7 @@ void setBasicData(uint8_t *p_nodeId, uint8_t *p_groupId, uint8_t *p_memberNum) {
       Serial.println(*p_memberNum);
     }
     else {
-      delay(500);
+      delay(1000);
     }
     serialIn = "";
   }
