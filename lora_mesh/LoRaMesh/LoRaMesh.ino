@@ -1,4 +1,4 @@
-#include <EEPROM.h>
+ #include <EEPROM.h>
 #include <RHRouter.h>
 #include <RHMesh.h>
 #include <RH_RF95.h>
@@ -206,7 +206,7 @@ const __FlashStringHelper* getErrorString(uint8_t error) {
   return F("unknown");
 }
 
-double rssitoDistance(double rssi, int a = 67, double n = 1.192913874) {
+double rssitoDistance(double rssi, double a = 58.75, double n = 2.15088592) {
   return pow(10, ((abs(rssi) - a) / (10 * n)));
 }
 
@@ -285,7 +285,8 @@ void loop() {
       Serial.print(F("node "));
       Serial.print(i + 1);
       Serial.print(F(" offline: "));
-      Serial.println(rssitoDistance(rssi[i]));
+      Serial.print(rssitoDistance(rssi[i]));
+      Serial.println(F("m"));
 
       LEDblink(i + 1);
     }
